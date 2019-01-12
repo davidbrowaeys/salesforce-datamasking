@@ -26,7 +26,7 @@ public class DataMaskingService{
 				if (fieldValues.get(fieldName) == null){
 					obj.put(fieldName, null);
 				}else if (String.valueOf(fieldValues.get(fieldName)) == 'random_email'){
-					String value = generateRandomString2(10) + '@nabtest.co';
+					String value = generateRandomString2(10) + 'test.co';
 					obj.put(fieldName, value);
 				}else if (String.valueOf(fieldValues.get(fieldName)) == 'random_phone'){
 					String value = '0'+ generateRandomNumber(9);
