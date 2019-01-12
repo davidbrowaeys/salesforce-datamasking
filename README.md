@@ -1,48 +1,59 @@
-Step to mask data in PPT and UAT. 
+# Salesforce Datamasking
 
-Objects: Lead, Account, Contact, 
-Fields: 
+This package ...
 
-1. Import create manually the following class : DataService. This class can be found in our EntCRM repo under script/datamasking. 
-2. Update SObjectDomain.handleBeforeUpdate as follow : 
+## Usage
+<b>Objects:</b> Lead, Account, Contact
 
-    public void handleBeforeUpdate(Map<Id,SObject> oldMap) {
-        log.functionName = 'BeforeUpdate';
-        onBeforeUpdate(oldMap);
-        DataMaskingService.execute(records);
-    }
+1. Install datamasking plugin in your sandbox by deploying the package under 'pre' folder. This will install all the apex classes, triggers, ... that are required. 
 
-3. create/update trigger for target object : 
-    1. if trigger exist for a particular object, make sure the before update is referenced in the trigger. 
-        the object handler class do not need to override the onBeforeUpdate. The object domain will handle it as you update the object domain layer at step 2. 
-    2. if there is not trigger created yet for that particular object, create a new one as follow: 
-        trigger MyObjectTrigger on MyObject__c (before update){
-            DataMaskingService.execute(Trigger.new);
-        }
-    this is only a temporary trigger you do not need to use the object domain layer. You will be deleting this later on. 
-    If you feel more confortable you can create new trigger for ALL target object regardless of the core apex code. 
+2. Prepare the masking config for each object as describe below
 
-4. Export all records of target object (ID's only) using Data Loader or Report
+3. Export ALL record id of your objects using any extraction tools such as dataloader, sfdx, workbench, reports.
 
-5. Still using data loader (or sfdx explained below), perform an update of all records by mapping ID only. 
-MAKE SURE BULK API MODE IS ENABLED
+4. Perform dummy update on all extracted files using any data tools such as dataloader. Make sure you enable BULK API mode if you have a large volume of data. 
 
-6. Clean up everything : 
-    1. Delete created temporary trigger
-    2. Update SObjectDomain back
+5. Once done, make sure you delete ALL the created trigger installed in step 1.
 
-Update data using SFDX : 
-1. Export all data : 
-sfdx force:data:soql:query -q "SELECT Id FROM Contact" -u ppt -r csv > contact_ids.csv
+## Masking Config
 
-2. Bulk update data : 
-sfdx force:data:bulk:upsert -s Contact -f ./contact_ids.csv -i Id -u ppt 
+For each object, you must create a new static resource that will hold the data masking mapping. 
+
+Go to Dveloper Console  > New  > Static Resources and select application/json and call the file : 
+
+DataMasking<i>{{ObjectName}}</i>, i.e.: DataMaskingLead
+
+### Keywords:
+
+* random_name
+* random_date
+* random_email
+* random_phone
+* random_street
+* random_num
+* random_num_str::<i>n</i> where n is the number of digits
+
+### Examples
+
+{
+    "Name"              : "random_name",
+    "Email__c"          : "random_email",
+    "BillingStreet"     : "random_street",
+    "BillingPostalCode" : "random_num_str::4"
+}
 
 
-Automated solution using Jenkins : 
-- Jenkins should deploy the data masking package under script/datamasking folder. This folder should include all the changes necessary to perform the data masking : 
-    1. data masking service class
-    2. trigger for target objects
-- Jenkins should then export data using SFDX as explained above. Again export should only contains the ID's of the records... How long is this using DX ????
-- Jenkins should update ALL data using SFDX as explained above. 
-- Jenkins should rollback changes by deploying a destructive changes
+{
+    "FirstName"    : "random_name",
+    "LastName"     : "random_name",
+    "DOB__c"       : "random_date",
+    "Email"        : "random_email",
+    "Home_Email__c": "random_email",
+    "MailingStreet": "random_street",
+    "OtherStreet"  : "random_street",
+    "Type"         : "Customer",
+    "Phone"        : null,
+    "HomePhone"    : null,
+    "MobilePhone"  : null,
+    "OtherPhone"   : null
+}
